@@ -1,6 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\WordController;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/words', [WordController::class, 'index']);
+    Route::post('/words', [WordController::class, 'store']);
+    Route::delete('/words/{word}', [WordController::class, 'destroy']);
+
+    Route::get('/study', [WordController::class, 'study']);
+    Route::post('/words/{word}/review', [WordController::class, 'review']);
+});
 
 Route::inertia('/', 'welcome')->name('home');
 

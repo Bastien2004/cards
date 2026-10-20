@@ -12,7 +12,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/words/{word}/review', [WordController::class, 'review']);
 });
 
-Route::inertia('/', 'welcome')->name('home');
+// La page d'accueil renvoie directement vers la connexion.
+// Un utilisateur déjà connecté est ensuite redirigé vers /study.
+Route::redirect('/', '/login')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');

@@ -5,18 +5,27 @@ import {
     CheckCircle2,
     Eye,
     RotateCcw,
-    Sparkles,
+    Volume2,
     X,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 
 type Word = {
     id: number;
     french: string;
     english: string;
 };
+
+function speak(text: string) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+}
 
 function FlashCard({ word }: { word: Word }) {
     const [revealed, setRevealed] = useState(false);
@@ -27,80 +36,100 @@ function FlashCard({ word }: { word: Word }) {
     }
 
     return (
-        <div className="mx-auto flex w-full max-w-lg flex-col items-center">
-            {/* Carte Flashcard */}
-            <Card
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+            {/* Carte */}
+            <div
+                role="button"
+                tabIndex={0}
                 onClick={() => !revealed && setRevealed(true)}
-                className={`relative flex min-h-[280px] w-full cursor-pointer flex-col items-center justify-between overflow-hidden rounded-2xl border-2 p-8 text-center transition-all duration-300 ${
+                onKeyDown={(e) => {
+                    if (!revealed && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        setRevealed(true);
+                    }
+                }}
+                className={`flex min-h-[340px] w-full cursor-pointer flex-col justify-between rounded-3xl border-2 bg-card p-8 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400/40 ${
                     revealed
-                        ? 'border-emerald-500/50 bg-gradient-to-b from-amber-500/5 via-emerald-500/5 to-transparent shadow-xl shadow-emerald-500/10 dark:from-amber-500/10 dark:via-emerald-500/10'
-                        : 'border-amber-400/40 bg-gradient-to-b from-amber-400/10 via-background to-background shadow-lg hover:border-amber-400 hover:shadow-amber-500/10 dark:border-amber-500/30 dark:hover:border-amber-400'
+                        ? 'border-green-500'
+                        : 'border-yellow-400 hover:border-yellow-300'
                 }`}
             >
-                {/* Badge d'état (Recto/Verso) */}
-                <div className="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider">
+                {/* En-tête de carte */}
+                <div className="flex items-center justify-between">
                     <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition-colors ${
-                            revealed
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                        className={`rounded-full px-3 py-1 text-sm font-bold text-black ${
+                            revealed ? 'bg-green-400' : 'bg-yellow-300'
                         }`}
                     >
-                        <Sparkles className="h-3.5 w-3.5" />
                         {revealed ? 'Français' : 'Anglais'}
                     </span>
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-sm font-medium text-muted-foreground">
                         {revealed ? 'Solution' : 'Mot à deviner'}
                     </span>
                 </div>
 
-                {/* Contenu principal */}
-                <div className="my-auto py-6">
-                    <p className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                {/* Mot */}
+                <div className="flex flex-col items-center gap-4 py-8 text-center">
+                    <p className="text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl">
                         {revealed ? word.french : word.english}
                     </p>
+
+                    {!revealed && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                speak(word.english);
+                            }}
+                            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-yellow-400 hover:text-yellow-500"
+                            aria-label={`Écouter la prononciation de ${word.english}`}
+                        >
+                            <Volume2 className="h-4 w-4" />
+                            Écouter
+                        </button>
+                    )}
                 </div>
 
-                {/* Indication bas de carte */}
-                <div className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-                    {!revealed ? (
-                        <>
-                            <Eye className="h-3.5 w-3.5 text-amber-500" />
-                            <span>Cliquez pour révéler la traduction</span>
-                        </>
+                {/* Bas de carte */}
+                <div className="flex justify-center">
+                    {revealed ? (
+                        <span className="text-sm font-semibold text-green-500">
+                            Avez-vous trouvé la bonne réponse ?
+                        </span>
                     ) : (
-                        <span className="text-emerald-600 dark:text-emerald-400">
-                            Évaluez votre réponse ci-dessous
+                        <span className="inline-flex items-center gap-2 rounded-full bg-yellow-300 px-5 py-2.5 text-sm font-bold text-black">
+                            <Eye className="h-4 w-4" />
+                            Révéler la traduction
                         </span>
                     )}
                 </div>
-            </Card>
+            </div>
 
-            {/* Boutons de réponse */}
-            <div className="mt-6 h-14 w-full">
+            {/* Réponses */}
+            <div className="min-h-14">
                 {revealed ? (
                     <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
                         <Button
                             onClick={() => answer(false)}
                             size="lg"
-                            className="h-12 border-amber-300 bg-amber-500/10 text-amber-900 hover:bg-amber-500/20 dark:border-amber-600/40 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-900/50"
-                            variant="outline"
+                            className="h-14 rounded-xl bg-yellow-300 text-base font-bold text-black hover:bg-yellow-200"
                         >
-                            <X className="mr-2 h-5 w-5 text-amber-600 dark:text-amber-400" />
+                            <X className="mr-2 h-5 w-5" />
                             À revoir
                         </Button>
                         <Button
                             onClick={() => answer(true)}
                             size="lg"
-                            className="h-12 bg-emerald-600 text-white shadow-md hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                            className="h-14 rounded-xl bg-green-500 text-base font-bold text-black hover:bg-green-400"
                         >
                             <Check className="mr-2 h-5 w-5" />
                             Je savais
                         </Button>
                     </div>
                 ) : (
-                    <p className="text-center text-xs text-muted-foreground">
-                        Astuce : Prenez le temps de prononcer le mot avant de vérifier.
+                    <p className="text-center text-sm text-muted-foreground">
+                        Astuce : prenez le temps de prononcer le mot avant de
+                        vérifier.
                     </p>
                 )}
             </div>
@@ -110,19 +139,14 @@ function FlashCard({ word }: { word: Word }) {
 
 export default function Study({ word }: { word: Word | null }) {
     return (
-        <div className="relative min-h-[calc(100vh-4rem)] bg-gradient-to-b from-amber-50/40 via-background to-background p-4 md:p-8 dark:from-amber-950/10">
-            {/* Halo lumineux d'arrière-plan */}
-            <div className="pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 blur-3xl opacity-25">
-                <div className="h-64 w-96 rounded-full bg-gradient-to-r from-amber-400 to-emerald-400" />
-            </div>
-
+        <div className="min-h-[calc(100vh-4rem)] p-4 md:p-8">
             <Head title="Réviser" />
 
-            <div className="relative mx-auto max-w-2xl space-y-8">
+            <div className="mx-auto max-w-2xl space-y-8">
                 {/* En-tête */}
-                <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
+                <div className="flex items-center justify-between border-b-2 border-yellow-400 pb-4">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                        <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
                             Session de révision
                         </h1>
                         <p className="text-sm text-muted-foreground">
@@ -130,37 +154,47 @@ export default function Study({ word }: { word: Word | null }) {
                         </p>
                     </div>
                     <Button variant="ghost" size="sm" asChild>
-                        <Link href="/words" className="gap-2 text-muted-foreground hover:text-emerald-600">
+                        <Link
+                            href="/words"
+                            className="gap-2 font-medium text-foreground hover:text-green-500"
+                        >
                             <ArrowLeft className="h-4 w-4" />
                             Mes mots
                         </Link>
                     </Button>
                 </div>
 
-                {/* Zone de la carte ou écran de succès */}
+                {/* Carte ou écran de fin */}
                 {word ? (
                     <FlashCard key={word.id} word={word} />
                 ) : (
-                    <Card className="flex flex-col items-center justify-center p-8 text-center border-2 border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/20">
-                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
+                    <div className="mx-auto flex max-w-xl flex-col items-center rounded-3xl border-2 border-green-500 bg-card p-10 text-center">
+                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-400 text-black">
                             <CheckCircle2 className="h-8 w-8" />
                         </div>
-                        <h2 className="text-xl font-bold text-foreground">
+                        <h2 className="text-2xl font-extrabold text-foreground">
                             Félicitations !
                         </h2>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Vous avez révisé tous vos mots pour le moment. Revenez plus tard pour renforcer votre mémoire.
+                            Vous avez révisé tous vos mots pour le moment.
+                            Revenez plus tard pour renforcer votre mémoire.
                         </p>
                         <div className="mt-6 flex gap-3">
-                            <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                            <Button
+                                asChild
+                                className="bg-green-500 font-bold text-black hover:bg-green-400"
+                            >
                                 <Link href="/words">Gérer mes mots</Link>
                             </Button>
-                            <Button variant="outline" onClick={() => router.reload()}>
+                            <Button
+                                variant="outline"
+                                onClick={() => router.reload()}
+                            >
                                 <RotateCcw className="mr-2 h-4 w-4" />
                                 Actualiser
                             </Button>
                         </div>
-                    </Card>
+                    </div>
                 )}
             </div>
         </div>

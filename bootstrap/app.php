@@ -19,6 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->trustProxies(at: '*');
 
+        // Un utilisateur déjà connecté qui ouvre /login ou /register arrive sur la révision.
+        $middleware->redirectUsersTo('/study');
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
